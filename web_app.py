@@ -5,7 +5,7 @@ import string
 
 # --- 1. CLOUD VAULT CONNECTION ---
 URL = "https://cumhnomhukgnvqzgwega.supabase.co"
-KEY = "sb_publishable_oEikr3WPifCepDIFCKm7VA_sTeSUBJQ"
+KEY = "sb_publishable_oEIkr3WPifCepDIFCKm7VA_sTeSUBJQ"
 
 try:
     supabase: Client = create_client(URL, KEY)
