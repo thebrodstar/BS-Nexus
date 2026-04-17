@@ -4,8 +4,8 @@ import random
 import string
 
 # --- 1. CLOUD VAULT CONNECTION ---
-URL = "https://cumhnomhukgnvqzgwega.supabase.co" 
-KEY = "sb_publishable_oElkr3WPifCepDIF6c80-45e0-a9e7-1169fa5c329f"
+URL = "https://cumhnomhukgnvqzgwega.supabase.co"
+KEY = "sb_publishable_oEikr3WPifCepDIFCKm7VA_sTeSUBJQ"
 
 try:
     supabase: Client = create_client(URL, KEY)
