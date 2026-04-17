@@ -1,5 +1,7 @@
 import streamlit as st
 from supabase import create_client, Client
+import random
+import string
 
 # --- 1. CLOUD VAULT CONNECTION ---
 URL = "https://cumhnomhukgnvqzgwega.supabase.co" 
@@ -15,34 +17,114 @@ st.set_page_config(page_title="B&S Nexus", layout="wide")
 
 st.markdown("""
     <style>
-    /* Google/Future Gradient Background */
     .stApp { 
         background: radial-gradient(circle at 10% 20%, rgb(255, 255, 255) 0%, rgb(228, 233, 237) 100%); 
         color: #202124; 
-        font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; 
     }
     [data-testid="stSidebar"] { background-color: rgba(248, 249, 250, 0.85); border-right: 1px solid #DADCE0; backdrop-filter: blur(10px); }
-    .stButton>button { width: 100%; border-radius: 8px; background-color: #1A73E8; color: white; font-weight: 600; border: none; padding: 10px; transition: all 0.3s ease; }
+    .stButton>button { width: 100%; border-radius: 8px; background-color: #1A73E8; color: white; font-weight: 600; padding: 10px; border: none; transition: 0.3s; }
     .stButton>button:hover { background-color: #1557B0; transform: translateY(-2px); box-shadow: 0 4px 6px rgba(26,115,232,0.3); }
-    .stTextInput>div>div>input, .stSelectbox>div>div>div, .stTextArea>div>div>textarea { background-color: #FFFFFF; color: #202124; border: 1px solid #DADCE0; border-radius: 6px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
-    h1, h2, h3 { color: #172B4D; font-weight: 700; }
+    h1, h2, h3 { color: #172B4D; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. THE "CEO" LOCK ---
-if 'authenticated' not in st.session_state:
-    st.session_state['authenticated'] = False
+# --- 3. SESSION STATE ---
+if 'user' not in st.session_state:
+    st.session_state['user'] = None
+if 'role' not in st.session_state:
+    st.session_state['role'] = None
+if 'active_project' not in st.session_state:
+    st.session_state['active_project'] = None
 
-if not st.session_state['authenticated']:
-    st.title("🛡️ B&S Nexus Security Gateway")
-    pin = st.text_input("Enter 4-Digit Clearance PIN", type="password")
-    if pin == "1234": 
-        st.session_state['authenticated'] = True
-        st.rerun()
+def generate_key():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+# --- 4. THE GATEWAY (LOGIN/REGISTER) ---
+if not st.session_state['user']:
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<h1 style='text-align: center;'>🌐 B&S Nexus</h1>", unsafe_allow_html=True)
+        tab_login, tab_register = st.tabs(["Sign In", "Create Account"])
+        
+        with tab_login:
+            lemail = st.text_input("Email")
+            lpass = st.text_input("Password", type="password")
+            if st.button("Access Portal"):
+                try:
+                    res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
+                    st.session_state['user'] = res.user
+                    prof = supabase.table("profiles").select("role").eq("id", res.user.id).execute()
+                    if prof.data:
+                        st.session_state['role'] = prof.data[0]['role']
+                    st.rerun()
+                except:
+                    st.error("Login Failed.")
+
+        with tab_register:
+            rrole = st.selectbox("I am a...", ["Manager", "Technician"])
+            rname = st.text_input("Full Name")
+            remail = st.text_input("Work Email")
+            rpass = st.text_input("Create Password", type="password")
+            if st.button("Register Account"):
+                try:
+                    res = supabase.auth.sign_up({"email": remail, "password": rpass})
+                    supabase.table("profiles").insert({"id": res.user.id, "email": remail, "full_name": rname, "role": rrole}).execute()
+                    st.success("Account created! Now go to 'Sign In'.")
+                except:
+                    st.error("Registration failed.")
     st.stop()
 
-# --- 4. ASSET REGISTRATION ---
-st.title("🌐 B&S Nexus | Infrastructure Portal")
+# --- 5. LOGOUT BUTTON ---
+if st.sidebar.button("Log Out"):
+    st.session_state['user'] = None
+    st.session_state.clear()
+    st.rerun()
 
-with st.sidebar:
-    st.header("📋 Field Entry")
+# --- 6. MANAGER DASHBOARD ---
+if st.session_state['role'] == "Manager":
+    st.title("👔 Manager Control Center")
+    with st.container(border=True):
+        p_name = st.text_input("Project Name (e.g. Halifax Fiber Expansion)")
+        if st.button("Generate Tech Access Key"):
+            new_key = generate_key()
+            supabase.table("projects").insert({"manager_id": st.session_state['user'].id, "project_name": p_name, "invite_key": new_key}).execute()
+            st.success(f"Project Live! Key for Dave: **{new_key}**")
+    
+    st.subheader("Current Network Audit Log")
+    try:
+        data = supabase.table("network_assets").select("*").execute()
+        st.table(data.data)
+    except:
+        st.write("No data yet.")
+
+# --- 7. TECHNICIAN DASHBOARD ---
+else:
+    st.title("🔧 Technician Field Portal")
+    
+    # Check if joined a project
+    check = supabase.table("roster").select("project_id").eq("user_id", st.session_state['user'].id).execute()
+    
+    if not check.data:
+        st.info("Please enter the key provided by your manager to begin.")
+        join_key = st.text_input("6-Digit Project Key")
+        if st.button("Join Project"):
+            proj = supabase.table("projects").select("id").eq("invite_key", join_key).execute()
+            if proj.data:
+                supabase.table("roster").insert({"user_id": st.session_state['user'].id, "project_id": proj.data[0]['id']}).execute()
+                st.success("Project Linked!")
+                st.rerun()
+            else:
+                st.error("Invalid Key.")
+    else:
+        # Dave is in! Show him the matrix.
+        with st.sidebar:
+            st.header("📋 Fiber Entry")
+            cat = st.selectbox("Type", ["MDF", "Pole", "FDH/JWI", "Node", "MST", "Vault"])
+            aid = st.text_input("Asset ID")
+            count = st.selectbox("Fiber Count", [12, 24, 48, 144, 288, 432, 864, 1728, 3456])
+            if st.button("Commit to Vault"):
+                supabase.table("network_assets").insert({"asset_id": aid, "category": cat, "count": count}).execute()
+                st.success(f"Locked: {aid}")
+        
+        st.write("### Active Field Project")
+        st.write("You are connected to the B&S Nexus. All entries are timestamped and logged.")
