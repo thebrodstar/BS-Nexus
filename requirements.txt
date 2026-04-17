@@ -1,2 +1,2 @@
-supabase
-gotrue
+supabase==2.3.0
+gotrue==2.12.0
