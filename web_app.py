@@ -11,7 +11,7 @@ except:
     st.warning("⚠️ Database not connected. Check your internet.")
 
 # --- 2. UI SETUP ---
-st.set_page_config(page_title="B&S Nexus", layout="wide")
+st.set_page_config(page_title="B&A Nexus", layout="wide")
 
 st.markdown("""
     <style>
@@ -20,6 +20,10 @@ st.markdown("""
     .stButton>button { width: 100%; border-radius: 8px; background-color: #1A73E8; color: white; font-weight: 600; padding: 10px; border: none; transition: 0.3s; }
     .stButton>button:hover { background-color: #1557B0; transform: translateY(-2px); }
     h1, h2, h3 { color: #172B4D; }
+    div[data-testid="stTextInput"] input { background-color: white !important; border: 1px solid #DADCE0 !important; border-radius: 8px !important; }
+    div[data-testid="stSelectbox"] div { background-color: white !important; border-radius: 8px !important; }
+    .forgot-link { color: #1A73E8; text-decoration: underline; cursor: pointer; font-size: 14px; }
+    .footer-link { text-align: center; margin-top: 20px; font-size: 14px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -32,53 +36,73 @@ if 'active_project' not in st.session_state:
     st.session_state['active_project'] = None
 if 'project_role' not in st.session_state:
     st.session_state['project_role'] = None
+if 'auth_page' not in st.session_state:
+    st.session_state['auth_page'] = "Sign In"
 
 # --- 4. LOGIN / REGISTER ---
 if not st.session_state['user']:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.image("Website logo.jpg", width=300)
-        page = st.selectbox("Select Option", ["Sign In", "Create Account", "Forgot Password"])
+        st.image("Website logo.jpg", use_column_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        if page == "Sign In":
-            st.markdown("### Sign In")
-            lemail = st.text_input("Email Address")
-            lpass = st.text_input("Password", type="password")
-            if st.button("Access Portal"):
-                try:
-                    res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
-                    st.session_state['user'] = res.user
-                    prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
-                    if prof.data:
-                        st.session_state['profile'] = prof.data[0]
+        if st.session_state['auth_page'] == "Sign In":
+            st.markdown("## Sign In")
+            lemail = st.text_input("Email Address", placeholder="Enter your email")
+            lpass = st.text_input("Password", type="password", placeholder="Enter your password")
+
+            btn_col, link_col = st.columns([2, 1])
+            with btn_col:
+                if st.button("Access Portal"):
+                    try:
+                        res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
+                        st.session_state['user'] = res.user
+                        prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
+                        if prof.data:
+                            st.session_state['profile'] = prof.data[0]
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Login Failed: {e}")
+            with link_col:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Forgot Password?"):
+                    st.session_state['auth_page'] = "Forgot Password"
                     st.rerun()
-                except Exception as e:
-                    st.error(f"Login Failed: {e}")
 
-        if page == "Forgot Password":
-            st.markdown("### Reset Your Password")
+            st.markdown("---")
+            st.markdown("<div style='text-align:center'>Don't have an account? <a href='#' style='color:#1A73E8'>Click here</a></div>", unsafe_allow_html=True)
+            if st.button("Create New Account"):
+                st.session_state['auth_page'] = "Create Account"
+                st.rerun()
+
+        elif st.session_state['auth_page'] == "Forgot Password":
+            st.markdown("## Reset Your Password")
             st.write("Enter your work email and we'll send you a reset link.")
-            reset_email = st.text_input("Work Email Address")
+            reset_email = st.text_input("Work Email Address", placeholder="Enter your email")
             if st.button("Send Reset Link"):
                 try:
                     supabase.auth.reset_password_email(reset_email)
                     st.success("✅ Password reset email sent! Check your inbox.")
                 except Exception as e:
                     st.error(f"Error: {e}")
+            st.markdown("---")
+            if st.button("← Back to Sign In"):
+                st.session_state['auth_page'] = "Sign In"
+                st.rerun()
 
-        if page == "Create Account":
-            st.markdown("### Create Your Profile")
+        elif st.session_state['auth_page'] == "Create Account":
+            st.markdown("## Create Your Profile")
 
             st.markdown("---")
             st.markdown("#### 👤 Position & Identity")
             rrole = st.selectbox("Position / Role", ["Manager", "Technician", "Supervisor", "Administrator"])
-            employee_id = st.text_input("Employee ID")
+            employee_id = st.text_input("Employee ID", placeholder="Enter your employee ID")
 
             st.markdown("---")
             st.markdown("#### 📋 Personal Information")
-            first_name = st.text_input("First Name")
-            last_name = st.text_input("Last Name")
-            phone = st.text_input("Phone Number")
+            first_name = st.text_input("First Name", placeholder="Enter your first name")
+            last_name = st.text_input("Last Name", placeholder="Enter your last name")
+            phone = st.text_input("Phone Number", placeholder="e.g. 902-555-0100")
 
             st.markdown("---")
             st.markdown("#### 🚨 Emergency Contact")
@@ -125,10 +149,10 @@ if not st.session_state['user']:
 
             st.markdown("---")
             st.markdown("#### 🔒 Account Security")
-            remail = st.text_input("Work Email Address")
-            rpass = st.text_input("Create Password", type="password")
-            rpass2 = st.text_input("Confirm Password", type="password")
-            agree = st.checkbox("I confirm all information is accurate and agree to the B&S Nexus terms of use and accountability policy.")
+            remail = st.text_input("Work Email Address", placeholder="Enter your work email")
+            rpass = st.text_input("Create Password", type="password", placeholder="Create a strong password")
+            rpass2 = st.text_input("Confirm Password", type="password", placeholder="Re-enter your password")
+            agree = st.checkbox("I confirm all information is accurate and agree to the B&A Nexus terms of use and accountability policy.")
 
             if st.button("Register Account"):
                 if not agree:
@@ -175,9 +199,16 @@ if not st.session_state['user']:
                             "other_certifications": other_certifications,
                             "other_safety_courses": other_safety_courses,
                         }).execute()
-                        st.success("✅ Account created! Select 'Sign In' to access the portal.")
+                        st.success("✅ Account created! Click below to sign in.")
+                        st.session_state['auth_page'] = "Sign In"
+                        st.rerun()
                     except Exception as e:
                         st.error(f"Registration failed: {e}")
+
+            st.markdown("---")
+            if st.button("← Back to Sign In"):
+                st.session_state['auth_page'] = "Sign In"
+                st.rerun()
     st.stop()
 
 # --- 5. SIDEBAR ---
@@ -201,7 +232,7 @@ with st.sidebar:
         st.rerun()
 
 # --- 6. PROJECT SELECTION ---
-st.title("🌐 B&S Nexus")
+st.title("🌐 B&A Nexus")
 
 all_projects = supabase.table("projects").select("*").execute()
 my_memberships = supabase.table("project_members").select("*").eq("user_id", st.session_state['user'].id).execute()
@@ -346,19 +377,4 @@ if st.session_state['active_project']:
         if my_assets.data:
             for asset in my_assets.data:
                 status_icon = "🔶" if asset['status'] == "Pending" else "✅" if asset['status'] == "Approved" else "❌"
-                with st.expander(f"{status_icon} {asset['asset_id']} — {asset['category']} — {asset['count']} fibers — {asset['status']}"):
-                    comments = supabase.table("asset_comments").select("*").eq("asset_id", asset['id']).execute()
-                    if comments.data:
-                        st.markdown("**Messages:**")
-                        for c in comments.data:
-                            st.markdown(f"> {c['message']} — *{c['created_at'][:10]}*")
-                    reply = st.text_input("Reply to manager", key=f"reply_{asset['id']}")
-                    if st.button("Send Reply", key=f"sendreply_{asset['id']}"):
-                        if reply:
-                            supabase.table("asset_comments").insert({"asset_id": asset['id'], "user_id": st.session_state['user'].id, "message": reply}).execute()
-                            managers = supabase.table("project_members").select("user_id").eq("project_id", proj['id']).eq("role", "Manager").execute()
-                            for mgr in managers.data:
-                                supabase.table("notifications").insert({"user_id": mgr['user_id'], "message": f"💬 Tech replied on {asset['asset_id']}: {reply}"}).execute()
-                            st.rerun()
-        else:
-            st.info("No assets submitted yet. Use the sidebar to add entries.")
+                with st.expander(f"{status_icon} {asset['asset_id']} — {asset['category']} — {asset['count']} fibers — {asset['status']}
