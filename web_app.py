@@ -14,22 +14,23 @@ st.set_page_config(page_title="B&A Nexus", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #f0f2f5; color: #202124; }
-    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #DADCE0; }
-    h1, h2, h3 { color: #172B4D; }
-
-    div[data-testid="stTextInput"] input {
-        background-color: white !important;
-        border: 1.5px solid #DADCE0 !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
-        font-size: 16px !important;
-    }
-    div[data-testid="stTextInput"] label {
-        font-weight: 600 !important;
+    [data-testid="stSidebar"] { background-color: #172B4D; }
+    [data-testid="stSidebar"] * { color: white !important; }
+    [data-testid="stSidebar"] .stButton>button {
+        width: 100%;
+        background: none !important;
+        border: none !important;
+        color: white !important;
         font-size: 15px !important;
-        color: #172B4D !important;
+        font-weight: 500 !important;
+        text-align: left !important;
+        padding: 10px 16px !important;
+        border-radius: 8px !important;
+        margin-bottom: 4px !important;
     }
-
+    [data-testid="stSidebar"] .stButton>button:hover {
+        background-color: rgba(255,255,255,0.1) !important;
+    }
     .main-btn button {
         width: 100% !important;
         border-radius: 25px !important;
@@ -40,10 +41,7 @@ st.markdown("""
         padding: 12px !important;
         border: none !important;
     }
-    .main-btn button:hover {
-        background-color: #1557B0 !important;
-    }
-
+    .main-btn button:hover { background-color: #1557B0 !important; }
     .link-btn button {
         background: none !important;
         border: none !important;
@@ -51,15 +49,12 @@ st.markdown("""
         text-decoration: underline !important;
         font-size: 14px !important;
         padding: 0 !important;
-        margin: 0 !important;
-        cursor: pointer !important;
         box-shadow: none !important;
         width: auto !important;
     }
-    .link-btn button:hover {
-        color: #1557B0 !important;
-        background: none !important;
-    }
+    h1, h2, h3 { color: #172B4D; }
+    div[data-testid="stTextInput"] input { background-color: white !important; border: 1.5px solid #DADCE0 !important; border-radius: 8px !important; padding: 12px !important; font-size: 16px !important; }
+    div[data-testid="stTextInput"] label { font-weight: 600 !important; font-size: 15px !important; color: #172B4D !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -73,6 +68,8 @@ if "project_role" not in st.session_state:
     st.session_state["project_role"] = None
 if "auth_page" not in st.session_state:
     st.session_state["auth_page"] = "Sign In"
+if "nav" not in st.session_state:
+    st.session_state["nav"] = "My Projects"
 
 if not st.session_state["user"]:
     col1, col2, col3 = st.columns([1, 1.2, 1])
@@ -83,7 +80,6 @@ if not st.session_state["user"]:
             st.markdown("## Sign In to B&A Nexus")
             lemail = st.text_input("Email Address")
             lpass = st.text_input("Password", type="password")
-
             st.markdown("<div class='main-btn'>", unsafe_allow_html=True)
             if st.button("Sign In", key="signin_btn"):
                 try:
@@ -96,7 +92,6 @@ if not st.session_state["user"]:
                 except Exception as e:
                     st.error("Login Failed: " + str(e))
             st.markdown("</div>", unsafe_allow_html=True)
-
             st.markdown("<br>", unsafe_allow_html=True)
             link1, link2 = st.columns(2)
             with link1:
@@ -244,97 +239,232 @@ if not st.session_state["user"]:
             st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
+# --- SIDEBAR NAVIGATION ---
 with st.sidebar:
+    st.image("Website logo.jpg", use_column_width=True)
     if st.session_state["profile"]:
-        st.markdown("**" + st.session_state["profile"]["full_name"] + "**")
+        st.markdown("**" + st.session_state["profile"].get("full_name", "") + "**")
+        st.markdown(st.session_state["profile"].get("role", ""))
         st.markdown(st.session_state["profile"].get("company", ""))
-        st.markdown(st.session_state["profile"].get("work_location", ""))
-        st.divider()
-    notifs = supabase.table("notifications").select("*").eq("user_id", st.session_state["user"].id).eq("is_read", False).execute()
-    if notifs.data:
-        st.warning("You have " + str(len(notifs.data)) + " unread notifications!")
-        for n in notifs.data:
-            st.info(n["message"])
-            supabase.table("notifications").update({"is_read": True}).eq("id", n["id"]).execute()
-    st.divider()
-    if st.button("Log Out"):
+    st.markdown("---")
+
+    notif_count = 0
+    try:
+        notifs = supabase.table("notifications").select("*").eq("user_id", st.session_state["user"].id).eq("is_read", False).execute()
+        notif_count = len(notifs.data)
+    except:
+        pass
+
+    if st.button("👤  My Profile"):
+        st.session_state["nav"] = "My Profile"
+        st.rerun()
+    if st.button("🔔  Notifications" + (" (" + str(notif_count) + ")" if notif_count > 0 else "")):
+        st.session_state["nav"] = "Notifications"
+        st.rerun()
+    if st.button("📬  Inbox"):
+        st.session_state["nav"] = "Inbox"
+        st.rerun()
+    if st.button("📁  My Projects"):
+        st.session_state["nav"] = "My Projects"
+        st.rerun()
+    if st.button("🌐  All Projects"):
+        st.session_state["nav"] = "All Projects"
+        st.rerun()
+    if st.button("➕  Create a Network"):
+        st.session_state["nav"] = "Create Network"
+        st.rerun()
+    st.markdown("---")
+    if st.button("🚪  Log Out"):
         st.session_state.clear()
         st.rerun()
 
-st.title("B&A Nexus")
+nav = st.session_state["nav"]
 
-all_projects = supabase.table("projects").select("*").execute()
-my_memberships = supabase.table("project_members").select("*").eq("user_id", st.session_state["user"].id).execute()
-my_project_ids = [m["project_id"] for m in my_memberships.data]
-
-project_page = st.selectbox("Project Menu", ["My Projects", "All Projects and Join", "Create New Project"])
-
-if project_page == "My Projects":
-    if not my_memberships.data:
-        st.info("You have not joined any projects yet.")
+# --- MY PROFILE ---
+if nav == "My Profile":
+    st.title("My Profile")
+    p = st.session_state["profile"]
+    if p:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**Name:** " + str(p.get("full_name", "")))
+            st.markdown("**Role:** " + str(p.get("role", "")))
+            st.markdown("**Employee ID:** " + str(p.get("employee_id", "")))
+            st.markdown("**Email:** " + str(p.get("email", "")))
+            st.markdown("**Phone:** " + str(p.get("phone", "")))
+            st.markdown("**Company:** " + str(p.get("company", "")))
+            st.markdown("**Department:** " + str(p.get("department", "")))
+            st.markdown("**Location:** " + str(p.get("work_location", "")))
+        with col2:
+            st.markdown("**Security Clearance:** " + str(p.get("security_clearance", "")))
+            st.markdown("**Drivers License:** " + str(p.get("drivers_license", "")))
+            st.markdown("**Air Brakes:** " + str(p.get("air_brakes", "")))
+            st.markdown("---")
+            st.markdown("**Safety Certifications:**")
+            if p.get("first_aid"): st.markdown("- First Aid / CPR (Expiry: " + str(p.get("first_aid_expiry", "")) + ")")
+            if p.get("whmis"): st.markdown("- WHMIS (Expiry: " + str(p.get("whmis_expiry", "")) + ")")
+            if p.get("osha"): st.markdown("- OSHA / OHS (Expiry: " + str(p.get("osha_expiry", "")) + ")")
+            if p.get("fall_protection"): st.markdown("- Fall Protection (Expiry: " + str(p.get("fall_protection_expiry", "")) + ")")
+            if p.get("confined_space"): st.markdown("- Confined Space (Expiry: " + str(p.get("confined_space_expiry", "")) + ")")
+            if p.get("fiber_cert"): st.markdown("- Fiber Optic Cert (Expiry: " + str(p.get("fiber_cert_expiry", "")) + ")")
+            st.markdown("**Other Certs:** " + str(p.get("other_certifications", "")))
+            st.markdown("**Emergency Contact:** " + str(p.get("emergency_contact_name", "")) + " - " + str(p.get("emergency_contact_phone", "")))
     else:
-        for proj in all_projects.data:
-            if proj["id"] in my_project_ids:
-                member = next((m for m in my_memberships.data if m["project_id"] == proj["id"]), None)
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.markdown("**" + proj["project_name"] + "** - " + member["role"])
-                with col2:
-                    if st.button("Open", key="open_" + proj["id"]):
-                        st.session_state["active_project"] = proj
-                        st.session_state["project_role"] = member["role"]
-                        st.rerun()
+        st.info("Profile not found.")
 
-if project_page == "All Projects and Join":
-    if not all_projects.data:
-        st.info("No projects exist yet.")
-    else:
-        for proj in all_projects.data:
-            col1, col2, col3 = st.columns([3, 1, 1])
-            with col1:
-                st.markdown("**" + proj["project_name"] + "**")
-            with col2:
-                join_role = st.selectbox("Role", ["Technician", "Manager"], key="role_" + proj["id"])
-            with col3:
-                if proj["id"] not in my_project_ids:
-                    if st.button("Join", key="join_" + proj["id"]):
-                        supabase.table("project_members").insert({
-                            "user_id": st.session_state["user"].id,
-                            "project_id": proj["id"],
-                            "role": join_role
-                        }).execute()
-                        st.success("Joined!")
-                        st.rerun()
+# --- NOTIFICATIONS ---
+elif nav == "Notifications":
+    st.title("Notifications")
+    try:
+        notifs = supabase.table("notifications").select("*").eq("user_id", st.session_state["user"].id).order("created_at", desc=True).execute()
+        if not notifs.data:
+            st.info("No notifications yet.")
+        else:
+            for n in notifs.data:
+                if not n["is_read"]:
+                    st.warning(n["message"] + "  —  " + str(n["created_at"])[:10])
+                    supabase.table("notifications").update({"is_read": True}).eq("id", n["id"]).execute()
                 else:
-                    st.markdown("Joined")
+                    st.info(n["message"] + "  —  " + str(n["created_at"])[:10])
+    except Exception as e:
+        st.error("Could not load notifications: " + str(e))
 
-if project_page == "Create New Project":
-    st.markdown("### Create New Project")
-    new_proj_name = st.text_input("Project Name")
-    if st.button("Create Project"):
+# --- INBOX ---
+elif nav == "Inbox":
+    st.title("Inbox")
+    st.write("Messages from your projects:")
+    try:
+        my_projects = supabase.table("project_members").select("project_id").eq("user_id", st.session_state["user"].id).execute()
+        my_project_ids = [m["project_id"] for m in my_projects.data]
+        if not my_project_ids:
+            st.info("Join a project to see messages.")
+        else:
+            for pid in my_project_ids:
+                proj_info = supabase.table("projects").select("project_name").eq("id", pid).execute()
+                proj_name = proj_info.data[0]["project_name"] if proj_info.data else "Unknown Project"
+                assets = supabase.table("network_assets").select("*").eq("project_id", pid).execute()
+                for asset in assets.data:
+                    comments = supabase.table("asset_comments").select("*").eq("asset_id", asset["id"]).execute()
+                    if comments.data:
+                        with st.expander(proj_name + " - " + str(asset["asset_id"])):
+                            for c in comments.data:
+                                st.markdown(str(c["message"]) + "  —  " + str(c["created_at"])[:10])
+                            reply = st.text_input("Reply", key="inbox_reply_" + str(asset["id"]))
+                            if st.button("Send", key="inbox_send_" + str(asset["id"])):
+                                if reply:
+                                    supabase.table("asset_comments").insert({
+                                        "asset_id": asset["id"],
+                                        "user_id": st.session_state["user"].id,
+                                        "message": reply
+                                    }).execute()
+                                    st.rerun()
+    except Exception as e:
+        st.error("Could not load inbox: " + str(e))
+
+# --- MY PROJECTS ---
+elif nav == "My Projects":
+    st.title("My Projects")
+    try:
+        all_projects = supabase.table("projects").select("*").execute()
+        my_memberships = supabase.table("project_members").select("*").eq("user_id", st.session_state["user"].id).execute()
+        my_project_ids = [m["project_id"] for m in my_memberships.data]
+        if not my_memberships.data:
+            st.info("You have not joined any projects yet. Go to All Projects to join one.")
+        else:
+            for proj in all_projects.data:
+                if proj["id"] in my_project_ids:
+                    member = next((m for m in my_memberships.data if m["project_id"] == proj["id"]), None)
+                    col1, col2 = st.columns([4, 1])
+                    with col1:
+                        st.markdown("### " + proj["project_name"])
+                        st.markdown("Role: **" + member["role"] + "**")
+                    with col2:
+                        if st.button("Open", key="open_" + proj["id"]):
+                            st.session_state["active_project"] = proj
+                            st.session_state["project_role"] = member["role"]
+                            st.session_state["nav"] = "Project Dashboard"
+                            st.rerun()
+                    st.markdown("---")
+    except Exception as e:
+        st.error("Could not load projects: " + str(e))
+
+# --- ALL PROJECTS ---
+elif nav == "All Projects":
+    st.title("All Projects")
+    try:
+        all_projects = supabase.table("projects").select("*").execute()
+        my_memberships = supabase.table("project_members").select("*").eq("user_id", st.session_state["user"].id).execute()
+        my_project_ids = [m["project_id"] for m in my_memberships.data]
+        if not all_projects.data:
+            st.info("No projects exist yet. Create one using Create a Network.")
+        else:
+            for proj in all_projects.data:
+                col1, col2, col3 = st.columns([3, 1, 1])
+                with col1:
+                    st.markdown("**" + proj["project_name"] + "**")
+                with col2:
+                    join_role = st.selectbox("Role", ["Technician", "Manager"], key="role_" + proj["id"])
+                with col3:
+                    if proj["id"] not in my_project_ids:
+                        if st.button("Join", key="join_" + proj["id"]):
+                            supabase.table("project_members").insert({
+                                "user_id": st.session_state["user"].id,
+                                "project_id": proj["id"],
+                                "role": join_role
+                            }).execute()
+                            st.success("Joined!")
+                            st.rerun()
+                    else:
+                        st.markdown("Joined")
+                st.markdown("---")
+    except Exception as e:
+        st.error("Could not load projects: " + str(e))
+
+# --- CREATE NETWORK ---
+elif nav == "Create Network":
+    st.title("Create a Network")
+    st.write("Create a new project network for your team.")
+    new_proj_name = st.text_input("Network / Project Name")
+    new_proj_desc = st.text_area("Description (optional)")
+    if st.button("Create Network"):
         if new_proj_name:
-            new_proj = supabase.table("projects").insert({
-                "project_name": new_proj_name,
-                "created_by": st.session_state["user"].id
-            }).execute()
-            supabase.table("project_members").insert({
-                "user_id": st.session_state["user"].id,
-                "project_id": new_proj.data[0]["id"],
-                "role": "Manager"
-            }).execute()
-            st.success("Project created!")
-            st.rerun()
+            try:
+                new_proj = supabase.table("projects").insert({
+                    "project_name": new_proj_name,
+                    "created_by": st.session_state["user"].id
+                }).execute()
+                supabase.table("project_members").insert({
+                    "user_id": st.session_state["user"].id,
+                    "project_id": new_proj.data[0]["id"],
+                    "role": "Manager"
+                }).execute()
+                st.success("Network created! You have been added as Manager.")
+                st.session_state["nav"] = "My Projects"
+                st.rerun()
+            except Exception as e:
+                st.error("Failed to create network: " + str(e))
+        else:
+            st.error("Please enter a network name.")
 
-if st.session_state["active_project"]:
+# --- PROJECT DASHBOARD ---
+elif nav == "Project Dashboard":
+    if not st.session_state["active_project"]:
+        st.session_state["nav"] = "My Projects"
+        st.rerun()
+
     proj = st.session_state["active_project"]
     role = st.session_state["project_role"]
-    st.divider()
-    st.markdown("## " + proj["project_name"] + " - " + role)
 
-    if st.button("Close Project"):
+    st.title(proj["project_name"])
+    st.markdown("**Your Role:** " + role)
+
+    if st.button("Back to My Projects"):
+        st.session_state["nav"] = "My Projects"
         st.session_state["active_project"] = None
         st.session_state["project_role"] = None
         st.rerun()
+
+    st.markdown("---")
 
     if role == "Manager":
         st.subheader("Pending Approvals")
@@ -352,7 +482,7 @@ if st.session_state["active_project"]:
                         st.markdown("**Messages:**")
                         for c in comments.data:
                             st.markdown(str(c["message"]) + " - " + str(c["created_at"])[:10])
-                    msg = st.text_input("Send message to tech", key="msg_" + str(asset["id"]))
+                    msg = st.text_input("Message to tech", key="msg_" + str(asset["id"]))
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         if st.button("Approve", key="app_" + str(asset["id"])):
@@ -371,6 +501,7 @@ if st.session_state["active_project"]:
                                 supabase.table("notifications").insert({"user_id": asset["user_id"], "message": "Manager commented on " + str(asset["asset_id"]) + ": " + msg}).execute()
                                 st.rerun()
 
+        st.markdown("---")
         st.subheader("Approved Assets")
         approved = supabase.table("network_assets").select("*").eq("project_id", proj["id"]).eq("status", "Approved").execute()
         if approved.data:
@@ -379,28 +510,32 @@ if st.session_state["active_project"]:
             st.info("No approved assets yet.")
 
     if role == "Technician":
-        with st.sidebar:
-            st.header("Fiber Entry")
+        st.subheader("Submit Fiber Entry")
+        col1, col2, col3 = st.columns(3)
+        with col1:
             cat = st.selectbox("Asset Type", ["MDF", "Pole", "FDH/JWI", "Node", "MST", "Vault"])
+        with col2:
             aid = st.text_input("Asset ID")
+        with col3:
             count = st.selectbox("Fiber Count", [12, 24, 48, 144, 288, 432, 864, 1728, 3456])
-            if st.button("Submit for Approval"):
-                try:
-                    supabase.table("network_assets").insert({
-                        "user_id": st.session_state["user"].id,
-                        "project_id": proj["id"],
-                        "asset_id": aid,
-                        "category": cat,
-                        "count": count,
-                        "status": "Pending"
-                    }).execute()
-                    managers = supabase.table("project_members").select("user_id").eq("project_id", proj["id"]).eq("role", "Manager").execute()
-                    for mgr in managers.data:
-                        supabase.table("notifications").insert({"user_id": mgr["user_id"], "message": "New entry " + str(aid) + " submitted for approval."}).execute()
-                    st.success("Submitted: " + str(aid))
-                except Exception as e:
-                    st.error("Failed: " + str(e))
+        if st.button("Submit for Approval"):
+            try:
+                supabase.table("network_assets").insert({
+                    "user_id": st.session_state["user"].id,
+                    "project_id": proj["id"],
+                    "asset_id": aid,
+                    "category": cat,
+                    "count": count,
+                    "status": "Pending"
+                }).execute()
+                managers = supabase.table("project_members").select("user_id").eq("project_id", proj["id"]).eq("role", "Manager").execute()
+                for mgr in managers.data:
+                    supabase.table("notifications").insert({"user_id": mgr["user_id"], "message": "New entry " + str(aid) + " submitted for approval."}).execute()
+                st.success("Submitted: " + str(aid))
+            except Exception as e:
+                st.error("Failed: " + str(e))
 
+        st.markdown("---")
         st.subheader("My Submitted Assets")
         my_assets = supabase.table("network_assets").select("*").eq("user_id", st.session_state["user"].id).eq("project_id", proj["id"]).execute()
         if my_assets.data:
