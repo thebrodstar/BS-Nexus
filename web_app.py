@@ -43,10 +43,10 @@ def generate_key():
 if not st.session_state['user']:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.image("Website logo.jpg", use_column_width=True)
-        tab_login, tab_register = st.tabs(["Sign In", "Register"])
+        st.image("Website logo.jpg", width=300)
+        page = st.radio("", ["Sign In", "Register"], horizontal=True)
 
-        with tab_login:
+        if page == "Sign In":
             lemail = st.text_input("Email")
             lpass = st.text_input("Password", type="password")
             if st.button("Access Portal"):
@@ -60,7 +60,7 @@ if not st.session_state['user']:
                 except Exception as e:
                     st.error(f"Login Failed: {e}")
 
-        with tab_register:
+        if page == "Register":
             rrole = st.selectbox("I am a...", ["Manager", "Technician"])
             rname = st.text_input("Full Name")
             remail = st.text_input("Work Email")
@@ -69,7 +69,7 @@ if not st.session_state['user']:
                 try:
                     res = supabase.auth.sign_up({"email": remail, "password": rpass})
                     supabase.table("profiles").insert({"id": res.user.id, "email": remail, "full_name": rname, "role": rrole}).execute()
-                    st.success("Account created! Now go to 'Sign In'.")
+                    st.success("Account created! Now select 'Sign In'.")
                 except Exception as e:
                     st.error(f"Registration failed: {e}")
     st.stop()
