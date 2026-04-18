@@ -20,9 +20,8 @@ for key, val in [("user", None), ("profile", None), ("auth_page", "Sign In")]:
 if not st.session_state["user"]:
     col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
-        with col2:
         # --- SMART LOGO LOADER ---
-        logo_found = False
+        Logo_found = False
         for ext in ["jpg", "png", "jpeg", "JPG", "PNG"]:
             try:
                 if st.image(f"Website logo.{ext}", use_container_width=True):
