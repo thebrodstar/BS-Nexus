@@ -1,71 +1,61 @@
 import streamlit as st
 from supabase import create_client, Client
 
-# --- DATABASE CONNECTION ---
+# --- DB CONNECTION ---
 URL = "https://cumhnomhukgnvqzgwega.supabase.co"
 KEY = "sb_publishable_oEIkr3WPifCepDIFCKm7VA_sTeSUBJQ"
 try: supabase: Client = create_client(URL, KEY)
 except: pass
 
 if "user" not in st.session_state or not st.session_state["user"]:
-    st.warning("⚠️ Please log in on the main page.")
+    st.warning("Please log in.")
     st.stop()
 
-st.title("📁 Projects & Networks")
+st.title("📁 Project & Asset Manager")
 
-# --- CREATE PROJECT (In an Expander) ---
-with st.expander("➕ Add New Project"):
-    with st.form("new_project"):
-        p_name = st.text_input("Project Name")
+# --- ADD PROJECT SECTION ---
+with st.expander("➕ New Project"):
+    with st.form("new_p"):
+        name = st.text_input("Project Name")
         client = st.text_input("Client")
-        net_type = st.selectbox("Type", ["FTTH", "Long Haul", "Maintenance"])
-        status = st.selectbox("Status", ["Planning", "Active", "Splicing", "Done"])
-        notes = st.text_area("Notes")
-        if st.form_submit_button("Save New Project"):
-            if p_name:
-                supabase.table("projects").insert({
-                    "project_name": p_name, "client": client, 
-                    "network_type": net_type, "status": status, 
-                    "notes": notes, "created_by": st.session_state["user"].id
-                }).execute()
-                st.success("Project Added!")
-                st.rerun()
+        if st.form_submit_button("Create Project"):
+            supabase.table("projects").insert({"project_name": name, "client": client, "created_by": st.session_state["user"].id}).execute()
+            st.rerun()
 
-st.markdown("---")
-st.subheader("Active Job Board")
-
-# --- FETCH & EDIT PROJECTS ---
-try:
-    res = supabase.table("projects").select("*").execute()
-    if res.data:
-        for p in res.data:
-            with st.container(border=True):
-                col1, col2 = st.columns([4, 1])
-                with col1:
-                    st.markdown(f"**{p['project_name']}** | {p['client']} ({p['status']})")
-                    st.caption(f"{p['network_type']} - {p['notes']}")
+# --- PROJECT LIST ---
+res = supabase.table("projects").select("*").execute()
+for p in res.data:
+    with st.container(border=True):
+        col1, col2 = st.columns([3, 1])
+        col1.subheader(f"🏗️ {p['project_name']}")
+        
+        # ASSET MANAGEMENT AREA
+        with st.expander(f"View Assets for {p['project_name']}"):
+            # Form to add a new asset
+            with st.form(f"add_asset_{p['id']}"):
+                st.write("**Add Field Asset**")
+                c1, c2, c3 = st.columns(3)
+                a_type = c1.selectbox("Type", ["MDF", "IDF", "Telepole", "JWI", "FOSC", "MH"], key=f"type_{p['id']}")
+                a_label = c2.text_input("Label/ID", placeholder="e.g. FOSC-A1", key=f"label_{p['id']}")
+                a_gps = c3.text_input("GPS (optional)", key=f"gps_{p['id']}")
                 
-                # The "Edit" trigger
-                with col2:
-                    if st.button("Edit", key=f"edit_{p['id']}"):
-                        st.session_state[f"editing_{p['id']}"] = True
+                if st.form_submit_button("Add Asset"):
+                    supabase.table("assets").insert({
+                        "project_id": p['id'],
+                        "asset_type": a_type,
+                        "label": a_label,
+                        "gps_coords": a_gps
+                    }).execute()
+                    st.success(f"{a_type} Added!")
+                    st.rerun()
+            
+            # List existing assets
+            assets_res = supabase.table("assets").select("*").eq("project_id", p['id']).execute()
+            if assets_res.data:
+                st.table(assets_res.data)
+            else:
+                st.info("No assets logged for this project yet.")
 
-                # The Edit Form (Only shows if Edit was clicked)
-                if st.session_state.get(f"editing_{p['id']}", False):
-                    with st.form(f"form_{p['id']}"):
-                        new_status = st.selectbox("Update Status", ["Planning", "Active", "Splicing", "Done"], 
-                                                  index=["Planning", "Active", "Splicing", "Done"].index(p['status']))
-                        new_notes = st.text_area("Update Notes", value=p['notes'])
-                        
-                        c1, c2 = st.columns(2)
-                        if c1.form_submit_button("Save Changes"):
-                            supabase.table("projects").update({"status": new_status, "notes": new_notes}).eq("id", p['id']).execute()
-                            st.session_state[f"editing_{p['id']}"] = False
-                            st.rerun()
-                        if c2.form_submit_button("Cancel"):
-                            st.session_state[f"editing_{p['id']}"] = False
-                            st.rerun()
-    else:
-        st.info("No projects found.")
-except Exception as e:
-    st.error(f"Error: {e}")
+        if col2.button("Delete Project", key=f"del_{p['id']}"):
+            supabase.table("projects").delete().eq("id", p['id']).execute()
+            st.rerun()
