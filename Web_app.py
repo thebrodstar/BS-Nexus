@@ -20,10 +20,8 @@ for key, val in [("user", None), ("profile", None), ("auth_page", "Sign In")]:
 if not st.session_state["user"]:
     col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
-        try:
-            st.image("Website logo.jpg", use_column_width=True)
-        except:
-            pass
+        try: st.image("Website logo.jpg", use_column_width=True)
+        except: pass
             
         if st.session_state["auth_page"] == "Sign In":
             st.markdown("## Sign In to B&A Nexus")
@@ -35,16 +33,21 @@ if not st.session_state["user"]:
                     res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
                     st.session_state["user"] = res.user
                     prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
-                    if prof.data:
-                        st.session_state["profile"] = prof.data[0]
+                    if prof.data: st.session_state["profile"] = prof.data[0]
                     st.rerun()
                 except Exception as e:
                     st.error(f"Login Failed: {e}")
             
             st.markdown("---")
-            if st.button("Create an Account"):
-                st.session_state["auth_page"] = "Create Account"
-                st.rerun()
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Create an Account"):
+                    st.session_state["auth_page"] = "Create Account"
+                    st.rerun()
+            with c2:
+                if st.button("Forgot Password?"):
+                    st.session_state["auth_page"] = "Forgot Password"
+                    st.rerun()
 
         elif st.session_state["auth_page"] == "Create Account":
             st.markdown("## Create Your Account")
@@ -62,10 +65,4 @@ if not st.session_state["user"]:
             
             st.markdown("---")
             if st.button("Back to Sign In"):
-                st.session_state["auth_page"] = "Sign In"
-                st.rerun()
-    st.stop() # Stops unauthenticated users here
-
-# --- LOGGED IN VIEW ---
-st.title("Welcome to B&A Nexus!")
-st.success("Authentication successful. Ready to build the next pages!")
+                st.session_state["
