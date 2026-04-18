@@ -65,4 +65,27 @@ if not st.session_state["user"]:
             
             st.markdown("---")
             if st.button("Back to Sign In"):
-                st.session_state["
+                st.session_state["auth_page"] = "Sign In"
+                st.rerun()
+
+        elif st.session_state["auth_page"] == "Forgot Password":
+            st.markdown("## Reset Password")
+            femail = st.text_input("Enter your email address to receive a reset link.")
+            
+            if st.button("Send Reset Link"):
+                try:
+                    supabase.auth.reset_password_for_email(femail)
+                    st.success("Reset link sent! Check your inbox.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            
+            st.markdown("---")
+            if st.button("Back to Sign In"):
+                st.session_state["auth_page"] = "Sign In"
+                st.rerun()
+
+    st.stop()
+
+# --- LOGGED IN VIEW ---
+st.title("Welcome to B&A Nexus!")
+st.success("Authentication successful. Select a page from the sidebar.")
