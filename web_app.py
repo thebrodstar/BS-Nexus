@@ -43,7 +43,7 @@ def generate_key():
 if not st.session_state['user']:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("<h1 style='text-align: center;'>🌐 B&S Nexus</h1>", unsafe_allow_html=True)
+        st.image("Website logo.jpg", use_column_width=True)
         tab_login, tab_register = st.tabs(["Sign In", "Register"])
 
         with tab_login:
