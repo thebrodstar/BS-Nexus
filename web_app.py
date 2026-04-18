@@ -13,11 +13,15 @@ st.set_page_config(page_title="B&A Nexus", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background: radial-gradient(circle at 10% 20%, rgb(255,255,255) 0%, rgb(228,233,237) 100%); color: #202124; }
-    [data-testid="stSidebar"] { background-color: rgba(248,249,250,0.85); border-right: 1px solid #DADCE0; }
-    .stButton>button { width: 100%; border-radius: 8px; background-color: #1A73E8; color: white; font-weight: 600; padding: 10px; border: none; }
+    .stApp { background-color: #f0f2f5; color: #202124; }
+    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #DADCE0; }
+    .stButton>button { width: 100%; border-radius: 25px; background-color: #1A73E8; color: white; font-weight: 700; font-size: 16px; padding: 12px; border: none; margin-top: 8px; }
+    .stButton>button:hover { background-color: #1557B0; }
     h1, h2, h3 { color: #172B4D; }
-    div[data-testid="stTextInput"] input { background-color: white !important; border-radius: 8px !important; }
+    div[data-testid="stTextInput"] input { background-color: white !important; border: 1.5px solid #DADCE0 !important; border-radius: 8px !important; padding: 12px !important; font-size: 16px !important; }
+    div[data-testid="stTextInput"] label { font-weight: 600 !important; font-size: 15px !important; color: #172B4D !important; }
+    .login-card { background: white; border-radius: 16px; padding: 40px; box-shadow: 0 2px 16px rgba(0,0,0,0.10); }
+    .link-btn { background: none; border: none; color: #1A73E8; text-decoration: underline; cursor: pointer; font-size: 14px; padding: 0; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -33,80 +37,98 @@ if "auth_page" not in st.session_state:
     st.session_state["auth_page"] = "Sign In"
 
 if not st.session_state["user"]:
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
+        st.markdown("<div class='login-card'>", unsafe_allow_html=True)
         st.image("Website logo.jpg", use_column_width=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
         if st.session_state["auth_page"] == "Sign In":
-            st.markdown("## Sign In")
+            st.markdown("## Sign In to B&A Nexus")
+            st.markdown("<br>", unsafe_allow_html=True)
+
             lemail = st.text_input("Email Address")
+            st.markdown("<small><a href='#' style='color:#1A73E8;'>Forgot your email?</a></small>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
             lpass = st.text_input("Password", type="password")
-            btn_col, link_col = st.columns([2, 1])
-            with btn_col:
-                if st.button("Access Portal"):
-                    try:
-                        res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
-                        st.session_state["user"] = res.user
-                        prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
-                        if prof.data:
-                            st.session_state["profile"] = prof.data[0]
-                        st.rerun()
-                    except Exception as e:
-                        st.error("Login Failed: " + str(e))
-            with link_col:
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("Forgot Password?"):
-                    st.session_state["auth_page"] = "Forgot Password"
+            if st.button("Forgot your password?", key="forgot_btn"):
+                st.session_state["auth_page"] = "Forgot Password"
+                st.rerun()
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Sign In"):
+                try:
+                    res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
+                    st.session_state["user"] = res.user
+                    prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
+                    if prof.data:
+                        st.session_state["profile"] = prof.data[0]
                     st.rerun()
-            st.markdown("---")
-            if st.button("Create New Account"):
+                except Exception as e:
+                    st.error("Login Failed: " + str(e))
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; color:#555;'>New to B&A Nexus?</p>", unsafe_allow_html=True)
+            if st.button("Create an Account"):
                 st.session_state["auth_page"] = "Create Account"
                 st.rerun()
 
         elif st.session_state["auth_page"] == "Forgot Password":
             st.markdown("## Reset Your Password")
+            st.write("Enter your work email and we will send you a reset link.")
+            st.markdown("<br>", unsafe_allow_html=True)
             reset_email = st.text_input("Work Email Address")
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Send Reset Link"):
                 try:
                     supabase.auth.reset_password_email(reset_email)
-                    st.success("Password reset email sent!")
+                    st.success("Password reset email sent! Check your inbox.")
                 except Exception as e:
                     st.error("Error: " + str(e))
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Back to Sign In"):
                 st.session_state["auth_page"] = "Sign In"
                 st.rerun()
 
         elif st.session_state["auth_page"] == "Create Account":
             st.markdown("## Create Your Profile")
-            st.markdown("---")
+            st.markdown("<br>", unsafe_allow_html=True)
+
             st.markdown("#### Position and Identity")
             rrole = st.selectbox("Position / Role", ["Manager", "Technician", "Supervisor", "Administrator"])
             employee_id = st.text_input("Employee ID")
+
             st.markdown("---")
             st.markdown("#### Personal Information")
             first_name = st.text_input("First Name")
             last_name = st.text_input("Last Name")
             phone = st.text_input("Phone Number")
+
             st.markdown("---")
             st.markdown("#### Emergency Contact")
             emergency_contact_name = st.text_input("Emergency Contact Full Name")
             emergency_contact_phone = st.text_input("Emergency Contact Phone Number")
             emergency_contact_relation = st.text_input("Relationship")
+
             st.markdown("---")
             st.markdown("#### Work Information")
             company = st.text_input("Company / Contractor Name")
             department = st.text_input("Department")
             work_location = st.text_input("Primary Work Location / City")
+
             st.markdown("---")
             st.markdown("#### Security Clearance")
             security_clearance = st.selectbox("Security Clearance Level", ["None", "Reliability", "Secret", "Top Secret"])
             clearance_expiry = st.text_input("Clearance Expiry Date (YYYY-MM-DD)")
+
             st.markdown("---")
             st.markdown("#### Drivers License")
             drivers_license = st.selectbox("License Class", ["None", "Class 5", "Class 3", "Class 1", "Other"])
             license_expiry = st.text_input("License Expiry Date (YYYY-MM-DD)")
             air_brakes = st.checkbox("Air Brakes Endorsement")
+
             st.markdown("---")
             st.markdown("#### Safety Certifications")
             first_aid = st.checkbox("First Aid / CPR")
@@ -119,18 +141,22 @@ if not st.session_state["user"]:
             fall_protection_expiry = st.text_input("Fall Protection Expiry (YYYY-MM-DD)") if fall_protection else ""
             confined_space = st.checkbox("Confined Space Entry")
             confined_space_expiry = st.text_input("Confined Space Expiry (YYYY-MM-DD)") if confined_space else ""
+
             st.markdown("---")
             st.markdown("#### Technical Certifications")
             fiber_cert = st.checkbox("Fiber Optic Certification")
             fiber_cert_expiry = st.text_input("Fiber Cert Expiry (YYYY-MM-DD)") if fiber_cert else ""
             other_certifications = st.text_input("Other Technical Certifications")
             other_safety_courses = st.text_input("Other Safety Courses Completed")
+
             st.markdown("---")
             st.markdown("#### Account Security")
             remail = st.text_input("Work Email Address")
             rpass = st.text_input("Create Password", type="password")
             rpass2 = st.text_input("Confirm Password", type="password")
             agree = st.checkbox("I confirm all information is accurate and agree to the B&A Nexus terms of use.")
+
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Register Account"):
                 if not agree:
                     st.error("You must agree to the terms before registering.")
@@ -181,9 +207,13 @@ if not st.session_state["user"]:
                         st.rerun()
                     except Exception as e:
                         st.error("Registration failed: " + str(e))
+
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Back to Sign In"):
                 st.session_state["auth_page"] = "Sign In"
                 st.rerun()
+
+        st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 with st.sidebar:
@@ -328,7 +358,7 @@ if st.session_state["active_project"]:
             count = st.selectbox("Fiber Count", [12, 24, 48, 144, 288, 432, 864, 1728, 3456])
             if st.button("Submit for Approval"):
                 try:
-                    new_asset = supabase.table("network_assets").insert({
+                    supabase.table("network_assets").insert({
                         "user_id": st.session_state["user"].id,
                         "project_id": proj["id"],
                         "asset_id": aid,
@@ -354,19 +384,4 @@ if st.session_state["active_project"]:
                 else:
                     status_icon = "Rejected"
                 label = asset["asset_id"] + " - " + asset["category"] + " - " + str(asset["count"]) + " fibers - " + status_icon
-                with st.expander(label):
-                    comments = supabase.table("asset_comments").select("*").eq("asset_id", asset["id"]).execute()
-                    if comments.data:
-                        st.markdown("**Messages:**")
-                        for c in comments.data:
-                            st.markdown(c["message"] + " - " + str(c["created_at"])[:10])
-                    reply = st.text_input("Reply to manager", key="reply_" + asset["id"])
-                    if st.button("Send Reply", key="sendreply_" + asset["id"]):
-                        if reply:
-                            supabase.table("asset_comments").insert({"asset_id": asset["id"], "user_id": st.session_state["user"].id, "message": reply}).execute()
-                            managers = supabase.table("project_members").select("user_id").eq("project_id", proj["id"]).eq("role", "Manager").execute()
-                            for mgr in managers.data:
-                                supabase.table("notifications").insert({"user_id": mgr["user_id"], "message": "Tech replied on " + asset["asset_id"] + ": " + reply}).execute()
-                            st.rerun()
-        else:
-            st.info("No assets submitted yet.")
+ 
