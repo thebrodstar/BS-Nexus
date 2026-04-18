@@ -44,7 +44,7 @@ if not st.session_state['user']:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.image("Website logo.jpg", width=300)
-        page = st.radio("", ["Sign In", "Register"], horizontal=True)
+        page = st.radio("Select:", ["Sign In", "Register"], horizontal=True)
 
         if page == "Sign In":
             lemail = st.text_input("Email")
