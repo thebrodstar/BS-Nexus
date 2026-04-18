@@ -9,7 +9,7 @@ try:
 except:
     st.warning("Database not connected.")
 
-st.set_page_config(page_title="B&A Nexus", layout="wide")
+st.set_page_config(page_title="B&D Nexus", layout="wide")
 
 # --- SESSION STATE ---
 for key, val in [("user", None), ("profile", None), ("auth_page", "Sign In")]:
@@ -24,7 +24,7 @@ if not st.session_state["user"]:
         except: pass
             
         if st.session_state["auth_page"] == "Sign In":
-            st.markdown("## Sign In to B&A Nexus")
+            st.markdown("## Sign In to B&D Nexus")
             lemail = st.text_input("Email Address")
             lpass = st.text_input("Password", type="password")
             
@@ -87,5 +87,5 @@ if not st.session_state["user"]:
     st.stop()
 
 # --- LOGGED IN VIEW ---
-st.title("Welcome to B&A Nexus!")
+st.title("Welcome to B&D Nexus!")
 st.success("Authentication successful. Select a page from the sidebar.")
