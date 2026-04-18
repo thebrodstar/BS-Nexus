@@ -43,23 +43,25 @@ if not st.session_state["user"]:
             st.markdown("## Sign In to B&A Nexus")
             lemail = st.text_input("Email Address")
             lpass = st.text_input("Password", type="password")
-            if st.button("Sign In", key="signin_btn"):
-                try:
-                    res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
-                    st.session_state["user"] = res.user
-                    prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
-                    if prof.data:
-                        st.session_state["profile"] = prof.data[0]
+            btn1, btn2 = st.columns(2)
+            with btn1:
+                if st.button("Sign In", key="signin_btn"):
+                    try:
+                        res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
+                        st.session_state["user"] = res.user
+                        prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
+                        if prof.data:
+                            st.session_state["profile"] = prof.data[0]
+                        st.rerun()
+                    except Exception as e:
+                        st.error("Login Failed: " + str(e))
+            with btn2:
+                if st.button("Create an Account", key="goto_register"):
+                    st.session_state["auth_page"] = "Create Account"
                     st.rerun()
-                except Exception as e:
-                    st.error("Login Failed: " + str(e))
+            st.markdown("---")
             if st.button("Forgot Password", key="goto_forgot"):
                 st.session_state["auth_page"] = "Forgot Password"
-                st.rerun()
-            st.markdown("---")
-            st.markdown("<p style='text-align:center; color:#555; font-size:15px;'>New to B&A Nexus?</p>", unsafe_allow_html=True)
-            if st.button("Create an Account", key="goto_register"):
-                st.session_state["auth_page"] = "Create Account"
                 st.rerun()
 
         elif st.session_state["auth_page"] == "Forgot Password":
