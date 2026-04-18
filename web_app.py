@@ -44,8 +44,8 @@ if not st.session_state['user']:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<h1 style='text-align: center;'>🌐 B&S Nexus</h1>", unsafe_allow_html=True)
-        tab_login, tab_register = st.tabs(["Sign In", "Create Account"])
-        
+        tab_login, tab_register = st.tabs(["Sign In", "Register"])
+
         with tab_login:
             lemail = st.text_input("Email")
             lpass = st.text_input("Password", type="password")
@@ -57,8 +57,8 @@ if not st.session_state['user']:
                     if prof.data:
                         st.session_state['role'] = prof.data[0]['role']
                     st.rerun()
-                except:
-                    st.error("Login Failed.")
+                except Exception as e:
+                    st.error(f"Login Failed: {e}")
 
         with tab_register:
             rrole = st.selectbox("I am a...", ["Manager", "Technician"])
@@ -70,13 +70,12 @@ if not st.session_state['user']:
                     res = supabase.auth.sign_up({"email": remail, "password": rpass})
                     supabase.table("profiles").insert({"id": res.user.id, "email": remail, "full_name": rname, "role": rrole}).execute()
                     st.success("Account created! Now go to 'Sign In'.")
-                except:
-                    st.error("Registration failed.")
+                except Exception as e:
+                    st.error(f"Registration failed: {e}")
     st.stop()
 
 # --- 5. LOGOUT BUTTON ---
 if st.sidebar.button("Log Out"):
-    st.session_state['user'] = None
     st.session_state.clear()
     st.rerun()
 
@@ -87,44 +86,73 @@ if st.session_state['role'] == "Manager":
         p_name = st.text_input("Project Name (e.g. Halifax Fiber Expansion)")
         if st.button("Generate Tech Access Key"):
             new_key = generate_key()
-            supabase.table("projects").insert({"manager_id": st.session_state['user'].id, "project_name": p_name, "invite_key": new_key}).execute()
-            st.success(f"Project Live! Key for Dave: **{new_key}**")
-    
+            supabase.table("projects").insert({
+                "manager_id": st.session_state['user'].id,
+                "project_name": p_name,
+                "invite_key": new_key
+            }).execute()
+            st.success(f"Project Live! Share this key with your technician: **{new_key}**")
+
     st.subheader("Current Network Audit Log")
     try:
         data = supabase.table("network_assets").select("*").execute()
-        st.table(data.data)
-    except:
-        st.write("No data yet.")
+        if data.data:
+            st.table(data.data)
+        else:
+            st.info("No assets logged yet.")
+    except Exception as e:
+        st.error(f"Could not load data: {e}")
 
 # --- 7. TECHNICIAN DASHBOARD ---
 else:
     st.title("🔧 Technician Field Portal")
-    
-    # Check if joined a project
+
     check = supabase.table("roster").select("project_id").eq("user_id", st.session_state['user'].id).execute()
-    
+
     if not check.data:
         st.info("Please enter the key provided by your manager to begin.")
         join_key = st.text_input("6-Digit Project Key")
         if st.button("Join Project"):
-            proj = supabase.table("projects").select("id").eq("invite_key", join_key).execute()
-            if proj.data:
-                supabase.table("roster").insert({"user_id": st.session_state['user'].id, "project_id": proj.data[0]['id']}).execute()
-                st.success("Project Linked!")
-                st.rerun()
-            else:
-                st.error("Invalid Key.")
+            try:
+                proj = supabase.table("projects").select("id").eq("invite_key", join_key).execute()
+                if proj.data:
+                    supabase.table("roster").insert({
+                        "user_id": st.session_state['user'].id,
+                        "project_id": proj.data[0]['id']
+                    }).execute()
+                    st.success("Project Linked!")
+                    st.rerun()
+                else:
+                    st.error("Invalid Key. Check with your manager.")
+            except Exception as e:
+                st.error(f"Error joining project: {e}")
     else:
-        # Dave is in! Show him the matrix.
         with st.sidebar:
             st.header("📋 Fiber Entry")
             cat = st.selectbox("Type", ["MDF", "Pole", "FDH/JWI", "Node", "MST", "Vault"])
             aid = st.text_input("Asset ID")
             count = st.selectbox("Fiber Count", [12, 24, 48, 144, 288, 432, 864, 1728, 3456])
             if st.button("Commit to Vault"):
-                supabase.table("network_assets").insert({"asset_id": aid, "category": cat, "count": count}).execute()
-                st.success(f"Locked: {aid}")
-        
+                try:
+                    supabase.table("network_assets").insert({
+                        "asset_id": aid,
+                        "category": cat,
+                        "count": count,
+                        "user_id": st.session_state['user'].id
+                    }).execute()
+                    st.success(f"Locked: {aid}")
+                except Exception as e:
+                    st.error(f"Failed to save: {e}")
+
         st.write("### Active Field Project")
         st.write("You are connected to the B&S Nexus. All entries are timestamped and logged.")
+
+        st.subheader("Your Logged Assets")
+        try:
+            assets = supabase.table("network_assets").select("*").eq("user_id", st.session_state['user'].id).execute()
+            if assets.data:
+                st.table(assets.data)
+            else:
+                st.info("No assets logged yet. Use the sidebar to add entries.")
+        except Exception as e:
+            st.error(f"Could not load assets: {e}")
