@@ -74,7 +74,7 @@ if not st.session_state["user"]:
                 st.rerun()
             if c2.button("Forgot Password?"):
                 st.session_state["auth_page"] = "Forgot Password"
-                st.rerun()import streamlit as st
+                st.rerun() import streamlit as st
 from supabase import create_client, Client
 
 # --- DATABASE CONNECTION ---
