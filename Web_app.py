@@ -20,8 +20,19 @@ for key, val in [("user", None), ("profile", None), ("auth_page", "Sign In")]:
 if not st.session_state["user"]:
     col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
-        try: st.image("Website logo.jpg", use_column_width=True)
-        except: pass
+        with col2:
+        # --- SMART LOGO LOADER ---
+        logo_found = False
+        for ext in ["jpg", "png", "jpeg", "JPG", "PNG"]:
+            try:
+                if st.image(f"Website logo.{ext}", use_container_width=True):
+                    logo_found = True
+                    break
+            except:
+                continue
+        
+        if not logo_found:
+            st.markdown("### 🛰️ B&D Nexus")
             
         if st.session_state["auth_page"] == "Sign In":
             st.markdown("## Sign In to B&D Nexus")
