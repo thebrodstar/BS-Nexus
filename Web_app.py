@@ -25,12 +25,12 @@ if not st.session_state["user"]:
         for ext in ["jpg", "png", "jpeg", "JPG", "PNG"]:
             try:
                 if st.image(f"Website logo.{ext}", use_container_width=True):
-                    logo_found = True
+                    Logo_found = True
                     break
             except:
                 continue
         
-        if not logo_found:
+        if not Logo_found:
             st.markdown("### 🛰️ B&D Nexus")
             
         if st.session_state["auth_page"] == "Sign In":
