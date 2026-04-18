@@ -1,7 +1,5 @@
 import streamlit as st
 from supabase import create_client, Client
-import random
-import string
 
 # --- 1. CLOUD VAULT CONNECTION ---
 URL = "https://cumhnomhukgnvqzgwega.supabase.co"
@@ -58,24 +56,68 @@ if not st.session_state['user']:
 
         if page == "Register":
             st.markdown("### Create Your Profile")
-            st.markdown("**Position & Identity**")
+
+            st.markdown("---")
+            st.markdown("#### 👤 Position & Identity")
             rrole = st.selectbox("Position", ["Manager", "Technician", "Supervisor", "Administrator"])
             employee_id = st.text_input("Employee ID")
-            st.markdown("**Personal Information**")
+
+            st.markdown("---")
+            st.markdown("#### 📋 Personal Information")
             first_name = st.text_input("First Name")
             last_name = st.text_input("Last Name")
             phone = st.text_input("Phone Number")
-            emergency_contact = st.text_input("Emergency Contact Name & Number")
-            st.markdown("**Work Information**")
+
+            st.markdown("---")
+            st.markdown("#### 🚨 Emergency Contact")
+            emergency_contact_name = st.text_input("Emergency Contact Name")
+            emergency_contact_phone = st.text_input("Emergency Contact Phone")
+            emergency_contact_relation = st.text_input("Relationship (e.g. Spouse, Parent)")
+
+            st.markdown("---")
+            st.markdown("#### 🏢 Work Information")
             company = st.text_input("Company / Contractor Name")
             department = st.text_input("Department")
             work_location = st.text_input("Primary Work Location / City")
-            certifications = st.text_input("Certifications (e.g. OSHA, Fiber, etc.)")
-            st.markdown("**Account Security**")
+
+            st.markdown("---")
+            st.markdown("#### 🔐 Security Clearance")
+            security_clearance = st.selectbox("Security Clearance Level", ["None", "Reliability", "Secret", "Top Secret"])
+            clearance_expiry = st.text_input("Clearance Expiry Date (YYYY-MM-DD)")
+
+            st.markdown("---")
+            st.markdown("#### 🚗 Driver's License")
+            drivers_license = st.selectbox("License Class", ["None", "Class 5", "Class 3", "Class 1", "Other"])
+            license_expiry = st.text_input("License Expiry Date (YYYY-MM-DD)")
+            air_brakes = st.checkbox("Air Brakes Endorsement")
+
+            st.markdown("---")
+            st.markdown("#### 🦺 Safety Certifications")
+            first_aid = st.checkbox("First Aid / CPR")
+            first_aid_expiry = st.text_input("First Aid Expiry (YYYY-MM-DD)") if first_aid else ""
+            whmis = st.checkbox("WHMIS")
+            whmis_expiry = st.text_input("WHMIS Expiry (YYYY-MM-DD)") if whmis else ""
+            osha = st.checkbox("OSHA / OH&S")
+            osha_expiry = st.text_input("OSHA Expiry (YYYY-MM-DD)") if osha else ""
+            fall_protection = st.checkbox("Fall Protection")
+            fall_protection_expiry = st.text_input("Fall Protection Expiry (YYYY-MM-DD)") if fall_protection else ""
+            confined_space = st.checkbox("Confined Space Entry")
+            confined_space_expiry = st.text_input("Confined Space Expiry (YYYY-MM-DD)") if confined_space else ""
+
+            st.markdown("---")
+            st.markdown("#### 📡 Technical Certifications")
+            fiber_cert = st.checkbox("Fiber Optic Certification")
+            fiber_cert_expiry = st.text_input("Fiber Cert Expiry (YYYY-MM-DD)") if fiber_cert else ""
+            other_certifications = st.text_input("Other Technical Certifications")
+            other_safety_courses = st.text_input("Other Safety Courses")
+
+            st.markdown("---")
+            st.markdown("#### 🔒 Account Security")
             remail = st.text_input("Work Email")
             rpass = st.text_input("Create Password", type="password")
             rpass2 = st.text_input("Confirm Password", type="password")
-            agree = st.checkbox("I confirm all information is accurate and agree to the B&S Nexus terms of use.")
+            agree = st.checkbox("I confirm all information is accurate and agree to the B&S Nexus terms of use and accountability policy.")
+
             if st.button("Register Account"):
                 if not agree:
                     st.error("You must agree to the terms before registering.")
@@ -95,11 +137,31 @@ if not st.session_state['user']:
                             "role": rrole,
                             "employee_id": employee_id,
                             "phone": phone,
-                            "emergency_contact": emergency_contact,
+                            "emergency_contact_name": emergency_contact_name,
+                            "emergency_contact_phone": emergency_contact_phone,
+                            "emergency_contact_relation": emergency_contact_relation,
                             "company": company,
                             "department": department,
                             "work_location": work_location,
-                            "certifications": certifications,
+                            "security_clearance": security_clearance,
+                            "clearance_expiry": clearance_expiry,
+                            "drivers_license": drivers_license,
+                            "license_expiry": license_expiry,
+                            "air_brakes": air_brakes,
+                            "first_aid": first_aid,
+                            "first_aid_expiry": first_aid_expiry,
+                            "whmis": whmis,
+                            "whmis_expiry": whmis_expiry,
+                            "osha": osha,
+                            "osha_expiry": osha_expiry,
+                            "fall_protection": fall_protection,
+                            "fall_protection_expiry": fall_protection_expiry,
+                            "confined_space": confined_space,
+                            "confined_space_expiry": confined_space_expiry,
+                            "fiber_cert": fiber_cert,
+                            "fiber_cert_expiry": fiber_cert_expiry,
+                            "other_certifications": other_certifications,
+                            "other_safety_courses": other_safety_courses,
                         }).execute()
                         st.success("Account created! Please select 'Sign In'.")
                     except Exception as e:
@@ -120,11 +182,10 @@ if not st.session_state['user']:
 with st.sidebar:
     if st.session_state['profile']:
         st.markdown(f"👤 **{st.session_state['profile']['full_name']}**")
-        st.markdown(f"🏢 {st.session_state['profile']['company']}")
-        st.markdown(f"📍 {st.session_state['profile']['work_location']}")
+        st.markdown(f"🏢 {st.session_state['profile'].get('company', '')}")
+        st.markdown(f"📍 {st.session_state['profile'].get('work_location', '')}")
         st.divider()
 
-    # Notifications
     notifs = supabase.table("notifications").select("*").eq("user_id", st.session_state['user'].id).eq("is_read", False).execute()
     if notifs.data:
         st.warning(f"🔔 You have {len(notifs.data)} unread notifications!")
@@ -214,7 +275,6 @@ if st.session_state['active_project']:
         st.session_state['project_role'] = None
         st.rerun()
 
-    # --- MANAGER VIEW ---
     if role == "Manager":
         st.subheader("📋 Pending Approvals")
         pending = supabase.table("network_assets").select("*").eq("project_id", proj['id']).eq("status", "Pending").execute()
@@ -223,15 +283,13 @@ if st.session_state['active_project']:
         else:
             for asset in pending.data:
                 with st.expander(f"🔶 {asset['asset_id']} — {asset['category']} — {asset['count']} fibers"):
-                    st.write(f"Submitted by user: {asset['user_id']}")
+                    st.write(f"Submitted by: {asset['user_id']}")
                     st.write(f"Date: {asset['created_at']}")
-
                     comments = supabase.table("asset_comments").select("*").eq("asset_id", asset['id']).execute()
                     if comments.data:
                         st.markdown("**Messages:**")
                         for c in comments.data:
                             st.markdown(f"> {c['message']} — *{c['created_at'][:10]}*")
-
                     msg = st.text_input("Send message to tech", key=f"msg_{asset['id']}")
                     col1, col2, col3 = st.columns(3)
                     with col1:
@@ -258,7 +316,6 @@ if st.session_state['active_project']:
         else:
             st.info("No approved assets yet.")
 
-    # --- TECHNICIAN VIEW ---
     if role == "Technician":
         with st.sidebar:
             st.header("📋 Fiber Entry")
