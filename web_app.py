@@ -38,10 +38,11 @@ if not st.session_state['user']:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.image("Website logo.jpg", width=300)
-        page = st.selectbox("", ["Sign In", "Register", "Forgot Password"])
+        page = st.selectbox("Select Option", ["Sign In", "Create Account", "Forgot Password"])
 
         if page == "Sign In":
-            lemail = st.text_input("Email")
+            st.markdown("### Sign In")
+            lemail = st.text_input("Email Address")
             lpass = st.text_input("Password", type="password")
             if st.button("Access Portal"):
                 try:
@@ -54,12 +55,23 @@ if not st.session_state['user']:
                 except Exception as e:
                     st.error(f"Login Failed: {e}")
 
-        if page == "Register":
+        if page == "Forgot Password":
+            st.markdown("### Reset Your Password")
+            st.write("Enter your work email and we'll send you a reset link.")
+            reset_email = st.text_input("Work Email Address")
+            if st.button("Send Reset Link"):
+                try:
+                    supabase.auth.reset_password_email(reset_email)
+                    st.success("✅ Password reset email sent! Check your inbox.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        if page == "Create Account":
             st.markdown("### Create Your Profile")
 
             st.markdown("---")
             st.markdown("#### 👤 Position & Identity")
-            rrole = st.selectbox("Position", ["Manager", "Technician", "Supervisor", "Administrator"])
+            rrole = st.selectbox("Position / Role", ["Manager", "Technician", "Supervisor", "Administrator"])
             employee_id = st.text_input("Employee ID")
 
             st.markdown("---")
@@ -70,9 +82,9 @@ if not st.session_state['user']:
 
             st.markdown("---")
             st.markdown("#### 🚨 Emergency Contact")
-            emergency_contact_name = st.text_input("Emergency Contact Name")
-            emergency_contact_phone = st.text_input("Emergency Contact Phone")
-            emergency_contact_relation = st.text_input("Relationship (e.g. Spouse, Parent)")
+            emergency_contact_name = st.text_input("Emergency Contact Full Name")
+            emergency_contact_phone = st.text_input("Emergency Contact Phone Number")
+            emergency_contact_relation = st.text_input("Relationship (e.g. Spouse, Parent, Sibling)")
 
             st.markdown("---")
             st.markdown("#### 🏢 Work Information")
@@ -109,11 +121,11 @@ if not st.session_state['user']:
             fiber_cert = st.checkbox("Fiber Optic Certification")
             fiber_cert_expiry = st.text_input("Fiber Cert Expiry (YYYY-MM-DD)") if fiber_cert else ""
             other_certifications = st.text_input("Other Technical Certifications")
-            other_safety_courses = st.text_input("Other Safety Courses")
+            other_safety_courses = st.text_input("Other Safety Courses Completed")
 
             st.markdown("---")
             st.markdown("#### 🔒 Account Security")
-            remail = st.text_input("Work Email")
+            remail = st.text_input("Work Email Address")
             rpass = st.text_input("Create Password", type="password")
             rpass2 = st.text_input("Confirm Password", type="password")
             agree = st.checkbox("I confirm all information is accurate and agree to the B&S Nexus terms of use and accountability policy.")
@@ -163,19 +175,9 @@ if not st.session_state['user']:
                             "other_certifications": other_certifications,
                             "other_safety_courses": other_safety_courses,
                         }).execute()
-                        st.success("Account created! Please select 'Sign In'.")
+                        st.success("✅ Account created! Select 'Sign In' to access the portal.")
                     except Exception as e:
                         st.error(f"Registration failed: {e}")
-
-        if page == "Forgot Password":
-            st.markdown("### Reset Your Password")
-            reset_email = st.text_input("Enter your work email")
-            if st.button("Send Reset Link"):
-                try:
-                    supabase.auth.reset_password_email(reset_email)
-                    st.success("Password reset email sent! Check your inbox.")
-                except Exception as e:
-                    st.error(f"Error: {e}")
     st.stop()
 
 # --- 5. SIDEBAR ---
@@ -205,11 +207,11 @@ all_projects = supabase.table("projects").select("*").execute()
 my_memberships = supabase.table("project_members").select("*").eq("user_id", st.session_state['user'].id).execute()
 my_project_ids = [m['project_id'] for m in my_memberships.data]
 
-tab1, tab2 = st.tabs(["My Projects", "All Projects"])
+project_page = st.selectbox("Project Menu", ["My Projects", "All Projects & Join", "Create New Project"])
 
-with tab1:
+if project_page == "My Projects":
     if not my_memberships.data:
-        st.info("You haven't joined any projects yet. Go to 'All Projects' to join one.")
+        st.info("You haven't joined any projects yet. Go to 'All Projects & Join' to join one.")
     else:
         for proj in all_projects.data:
             if proj['id'] in my_project_ids:
@@ -223,9 +225,9 @@ with tab1:
                         st.session_state['project_role'] = member['role']
                         st.rerun()
 
-with tab2:
+if project_page == "All Projects & Join":
     if not all_projects.data:
-        st.info("No projects exist yet.")
+        st.info("No projects exist yet. Go to 'Create New Project' to add one.")
     else:
         for proj in all_projects.data:
             col1, col2, col3 = st.columns([3, 1, 1])
@@ -246,7 +248,7 @@ with tab2:
                 else:
                     st.markdown("✅ Joined")
 
-    st.divider()
+if project_page == "Create New Project":
     st.markdown("### Create New Project")
     new_proj_name = st.text_input("Project Name")
     if st.button("Create Project"):
@@ -319,7 +321,7 @@ if st.session_state['active_project']:
     if role == "Technician":
         with st.sidebar:
             st.header("📋 Fiber Entry")
-            cat = st.selectbox("Type", ["MDF", "Pole", "FDH/JWI", "Node", "MST", "Vault"])
+            cat = st.selectbox("Asset Type", ["MDF", "Pole", "FDH/JWI", "Node", "MST", "Vault"])
             aid = st.text_input("Asset ID")
             count = st.selectbox("Fiber Count", [12, 24, 48, 144, 288, 432, 864, 1728, 3456])
             if st.button("Submit for Approval"):
