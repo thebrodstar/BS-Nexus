@@ -15,11 +15,51 @@ st.markdown("""
     <style>
     .stApp { background-color: #f0f2f5; color: #202124; }
     [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #DADCE0; }
-    .stButton>button { width: 100%; border-radius: 25px; background-color: #1A73E8; color: white; font-weight: 700; font-size: 16px; padding: 12px; border: none; margin-top: 4px; }
-    .stButton>button:hover { background-color: #1557B0; }
     h1, h2, h3 { color: #172B4D; }
-    div[data-testid="stTextInput"] input { background-color: white !important; border: 1.5px solid #DADCE0 !important; border-radius: 8px !important; padding: 12px !important; font-size: 16px !important; }
-    div[data-testid="stTextInput"] label { font-weight: 600 !important; font-size: 15px !important; color: #172B4D !important; }
+
+    div[data-testid="stTextInput"] input {
+        background-color: white !important;
+        border: 1.5px solid #DADCE0 !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        font-size: 16px !important;
+    }
+    div[data-testid="stTextInput"] label {
+        font-weight: 600 !important;
+        font-size: 15px !important;
+        color: #172B4D !important;
+    }
+
+    .main-btn button {
+        width: 100% !important;
+        border-radius: 25px !important;
+        background-color: #1A73E8 !important;
+        color: white !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        padding: 12px !important;
+        border: none !important;
+    }
+    .main-btn button:hover {
+        background-color: #1557B0 !important;
+    }
+
+    .link-btn button {
+        background: none !important;
+        border: none !important;
+        color: #1A73E8 !important;
+        text-decoration: underline !important;
+        font-size: 14px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        box-shadow: none !important;
+        width: auto !important;
+    }
+    .link-btn button:hover {
+        color: #1557B0 !important;
+        background: none !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -43,40 +83,53 @@ if not st.session_state["user"]:
             st.markdown("## Sign In to B&A Nexus")
             lemail = st.text_input("Email Address")
             lpass = st.text_input("Password", type="password")
-            btn1, btn2 = st.columns(2)
-            with btn1:
-                if st.button("Sign In", key="signin_btn"):
-                    try:
-                        res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
-                        st.session_state["user"] = res.user
-                        prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
-                        if prof.data:
-                            st.session_state["profile"] = prof.data[0]
-                        st.rerun()
-                    except Exception as e:
-                        st.error("Login Failed: " + str(e))
-            with btn2:
+
+            st.markdown("<div class='main-btn'>", unsafe_allow_html=True)
+            if st.button("Sign In", key="signin_btn"):
+                try:
+                    res = supabase.auth.sign_in_with_password({"email": lemail, "password": lpass})
+                    st.session_state["user"] = res.user
+                    prof = supabase.table("profiles").select("*").eq("id", res.user.id).execute()
+                    if prof.data:
+                        st.session_state["profile"] = prof.data[0]
+                    st.rerun()
+                except Exception as e:
+                    st.error("Login Failed: " + str(e))
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            link1, link2 = st.columns(2)
+            with link1:
+                st.markdown("<div class='link-btn'>", unsafe_allow_html=True)
+                if st.button("Forgot Password?", key="goto_forgot"):
+                    st.session_state["auth_page"] = "Forgot Password"
+                    st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+            with link2:
+                st.markdown("<div class='link-btn'>", unsafe_allow_html=True)
                 if st.button("Create an Account", key="goto_register"):
                     st.session_state["auth_page"] = "Create Account"
                     st.rerun()
-            st.markdown("---")
-            if st.button("Forgot Password", key="goto_forgot"):
-                st.session_state["auth_page"] = "Forgot Password"
-                st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state["auth_page"] == "Forgot Password":
             st.markdown("## Reset Your Password")
             st.write("Enter your work email and we will send you a reset link.")
             reset_email = st.text_input("Work Email Address")
+            st.markdown("<div class='main-btn'>", unsafe_allow_html=True)
             if st.button("Send Reset Link"):
                 try:
                     supabase.auth.reset_password_email(reset_email)
                     st.success("Password reset email sent! Check your inbox.")
                 except Exception as e:
                     st.error("Error: " + str(e))
+            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div class='link-btn'>", unsafe_allow_html=True)
             if st.button("Back to Sign In"):
                 st.session_state["auth_page"] = "Sign In"
                 st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
 
         elif st.session_state["auth_page"] == "Create Account":
             st.markdown("## Create Your Profile")
@@ -131,6 +184,7 @@ if not st.session_state["user"]:
             rpass = st.text_input("Create Password", type="password")
             rpass2 = st.text_input("Confirm Password", type="password")
             agree = st.checkbox("I confirm all information is accurate and agree to the B&A Nexus terms of use.")
+            st.markdown("<div class='main-btn'>", unsafe_allow_html=True)
             if st.button("Register Account"):
                 if not agree:
                     st.error("You must agree to the terms before registering.")
@@ -181,9 +235,13 @@ if not st.session_state["user"]:
                         st.rerun()
                     except Exception as e:
                         st.error("Registration failed: " + str(e))
+            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div class='link-btn'>", unsafe_allow_html=True)
             if st.button("Back to Sign In"):
                 st.session_state["auth_page"] = "Sign In"
                 st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 with st.sidebar:
